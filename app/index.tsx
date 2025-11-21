@@ -26,7 +26,13 @@ export default function Index() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 50 },
-  image: { width: '150%', height: undefined, aspectRatio: 1 },
+  image: { 
+  width: 400,
+  height: 400,
+  resizeMode: "contain",
+  marginBottom: 20
+},
+
   title: { fontSize: 20, marginBottom: 10 },
   botao: { backgroundColor: '#1E6FF2', padding: 12, borderRadius: 6, alignItems: 'center' },
   botaoTexto: { color: 'white', fontWeight: 'bold' },

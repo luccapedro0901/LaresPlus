@@ -1,42 +1,70 @@
-import React from 'react';
-import { SafeAreaView, ScrollView, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function InicioScreen() {
-  const router = useRouter(); 
+
+  const router = useRouter();
+  const [usuario, setUsuario] = useState("Visitante");
+
+  useEffect(() => {
+    async function carregarNome() {
+      try {
+        const id = await AsyncStorage.getItem("id_morador");
+        if (!id) return;
+
+        const resposta = await axios.get(`http://10.100.9.41:8081/morador/${id}`);
+
+        if (resposta.data && resposta.data.nome) {
+          setUsuario(resposta.data.nome);
+
+          await AsyncStorage.setItem("nome_morador", resposta.data.nome);
+        }
+
+      } catch (err) {
+        console.log("Erro ao buscar nome do morador:", err);
+      }
+    }
+
+    carregarNome();
+  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
+
         <View style={styles.header}>
           <Text style={styles.menu}>☰</Text>
-          <Text style={styles.titulo}>Olá, Pedro Lucca!</Text>
-          <Text style={styles.subtitulo}>Apartamento 001 - 23 - SUL Rua 2</Text>
+
+          <View style={styles.headerText}>
+            <Text style={styles.titulo}>Olá, {usuario}!</Text>
+          </View>
+
+          <Text style={styles.beneficioTitulo}>Quais os beneficios do nosso aplicativo? </Text>
+
+          <View style={styles.beneficios}>
+            <View style={styles.beneficio}>
+              <Text style={styles.icone}>📱</Text>
+              <Text style={styles.beneficioTexto}>Comodidade</Text>
+            </View>
+            <View style={styles.beneficio}>
+              <Text style={styles.icone}>♻️</Text>
+              <Text style={styles.beneficioTexto}>Sustentabilidade</Text>
+            </View>
+            <View style={styles.beneficio}>
+              <Text style={styles.icone}>📋</Text>
+              <Text style={styles.beneficioTexto}>Registro</Text>
+            </View>
+          </View>
         </View>
 
-        <TextInput style={styles.input} placeholder="Buscar" />
-
-        <Text style={styles.titulo2}>Quais os benefícios do nosso aplicativo?</Text>
-        <View style={styles.beneficios}>
-          <View style={styles.beneficio}>
-            <Text style={styles.icone}>📱</Text>
-            <Text>Comodidade</Text>
-          </View>
-          <View style={styles.beneficio}>
-            <Text style={styles.icone}>♻️</Text>
-            <Text>Sustentabilidade</Text>
-          </View>
-          <View style={styles.beneficio}>
-            <Text style={styles.icone}>📋</Text>
-            <Text>Registro</Text>
-          </View>
-        </View>
-
-        <Text style={styles.titulo2}>Nossos serviços</Text>
+        <Text style={styles.tituloServicos}>Nossos serviços</Text>
 
         <TouchableOpacity style={styles.botao} onPress={() => router.push('/AreasScreen')}>
-         <Text style={styles.botaoTitulo}>🗓️ AGENDAMENTO DE ÁREAS</Text>
-         <Text style={styles.botaoDescricao}>Reserve fácil, use sem preocupações</Text>
+          <Text style={styles.botaoTitulo}>🗓️ AGENDAMENTO DE ÁREAS</Text>
+          <Text style={styles.botaoDescricao}>Reserve fácil, use sem preocupações</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.botao} onPress={() => router.push('/ChamadosScreen')}>
@@ -50,17 +78,40 @@ export default function InicioScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20 },
-  header: { backgroundColor: '#1E6FF2', padding: 50, marginBottom: 10 },
-  menu: { fontSize: 20, color: 'white', marginBottom: 80 },
-  titulo: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-  subtitulo: { color: 'white', fontSize: 12 },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 20 },
-  titulo2: { fontSize: 16, fontWeight: 'bold', marginBottom: 10 },
-  beneficios: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 30 },
-  beneficio: { alignItems: 'center' },
-  icone: { fontSize: 30, marginBottom: 5 },
-  botao: { backgroundColor: '#f2f2f2', padding: 15, borderRadius: 10, marginBottom: 15 },
-  botaoTitulo: { fontWeight: 'bold', fontSize: 14 },
+  container: { paddingBottom: 30 },
+  header: { 
+    backgroundColor: '#1E6FF2',
+    paddingVertical: 40,
+    paddingHorizontal: 25,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  menu: { fontSize: 26, color: 'white', marginBottom: 20 },
+  headerText: { marginBottom: 25 },
+  titulo: { color: 'white', fontWeight: 'bold', fontSize: 20 },
+  beneficioTitulo: { color: 'white', fontWeight: 'bold', fontSize: 18, paddingBottom: 5 },
+  beneficios: { 
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 5,
+  },
+  beneficio: { alignItems: 'center', width: "33%" },
+  icone: { fontSize: 40, color: 'white' },
+  beneficioTexto: { color: 'white', marginTop: 5 },
+  tituloServicos: { fontSize: 20, fontWeight: 'bold', marginTop: 25, marginLeft: 20 },
+  botao: { 
+  backgroundColor: '#fff', 
+  padding: 18, 
+  borderRadius: 15, 
+  marginHorizontal: 20,
+  marginTop: 15,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.5,
+  elevation: 5,
+},
+
+  botaoTitulo: { fontWeight: 'bold', fontSize: 15 },
   botaoDescricao: { fontSize: 12, color: '#555' },
 });
