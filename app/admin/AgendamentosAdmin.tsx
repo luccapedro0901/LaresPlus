@@ -36,8 +36,7 @@ export default function AgendamentosAdmin() {
 
   return (
     <ScrollView style={styles.container}>
-          {/* VOLTAR */}
-          <TouchableOpacity onPress={() => router.push('/InicioScreen')}>
+          <TouchableOpacity onPress={() => router.push('/AdminDashboard')}>
             <Text style={styles.voltar}>← Voltar</Text>
           </TouchableOpacity>
       <Text style={styles.title}>Gerenciar Agendamentos</Text>

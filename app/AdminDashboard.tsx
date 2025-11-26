@@ -21,7 +21,7 @@ export default function AdminDashboard() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Painel do Síndico</Text>
+      <Text style={styles.titulo}>Painel do Administrador</Text>
 
       <TouchableOpacity
         style={styles.botao}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   ScrollView,
   View,
@@ -9,9 +9,9 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../axios/api';
 import ModalPicker from '../components/ModalPicker';
+import { recuperarIdMorador } from '../utils/secureStorage';
 
 export default function AberturadeChamadosScreen() {
   const router = useRouter();
@@ -22,7 +22,6 @@ export default function AberturadeChamadosScreen() {
   const [motivo, setMotivo] = useState('');
   const [descricao_chamado, setDescricao_chamado] = useState('');
   const [situacao, setSituacao] = useState('');
-  const [arquivos, setArquivos] = useState('');
 
   const areas = [
     { label: "Piscina", value: "1" },
@@ -45,23 +44,49 @@ export default function AberturadeChamadosScreen() {
     { label: "Leve", value: "LEVE" },
   ];
 
+  // Função para sanitizar strings
+  const sanitizeString = (input: string): string => {
+    return input
+      .trim()
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/'/g, "&#39;")
+      .replace(/"/g, "&quot;");
+  };
+
   const chamadoServico = async () => {
     try {
-      const idMoradorString = await AsyncStorage.getItem('id_morador');
-      const idMorador = idMoradorString ? Number(idMoradorString) : null;
-      if (!idMorador) { Alert.alert("Erro", "Morador não identificado."); return; }
+      const idMorador = await recuperarIdMorador();
+      if (!idMorador) {
+        Alert.alert("Erro", "Morador não identificado.");
+        return;
+      }
+
+      // Sanitização
+      const descricaoSanitizada = sanitizeString(descricao_chamado);
+      const motivoSanitizado = sanitizeString(motivo);
+      const situacaoSanitizada = sanitizeString(situacao);
+      const areaId = Number(area_comum);
+
+      // Validações básicas
+      if (!descricaoSanitizada || !motivoSanitizado || !situacaoSanitizada || isNaN(areaId)) {
+        Alert.alert("Erro", "Todos os campos devem ser preenchidos corretamente.");
+        return;
+      }
 
       const response = await api.post('/chamado_servico', {
-        descricao_chamado,
-        area_comum: { id_area: Number(area_comum) },
-        motivo,
-        situacao,
-        morador: { id_morador: idMorador },
+        descricao_chamado: descricaoSanitizada,
+        area_comum: { id_area: areaId },
+        motivo: motivoSanitizado,
+        situacao: situacaoSanitizada,
+        morador: { id_morador: Number(idMorador) },
       });
 
       Alert.alert("Chamado realizado!", response.data.mensagem);
       router.push('/ChamadosScreen');
-    } catch {
+
+    } catch (error) {
+      console.error(error);
       Alert.alert("Erro", "Não foi possível enviar o chamado.");
     }
   };

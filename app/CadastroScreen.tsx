@@ -9,9 +9,10 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../axios/api';
 import axios from 'axios';
+import { salvarIdMorador, salvarTipoUsuario } from '../utils/secureStorage';
+import { validarEmail, validarSenha, sanitizarTexto } from '../utils/validacao';
 
 export default function CadastroScreen() {
   const router = useRouter();
@@ -20,12 +21,31 @@ export default function CadastroScreen() {
   const [senha, setSenha] = useState('');
 
   const validarMorador = async () => {
+    const emailLimpo = sanitizarTexto(email);
+    const senhaLimpa = sanitizarTexto(senha);
+
+    if (!emailLimpo || !senhaLimpa) {
+      Alert.alert("Erro", "Preencha todos os campos.");
+      return;
+    }
+
+    if (!validarEmail(emailLimpo)) {
+      Alert.alert("Erro", "Informe um e-mail válido.");
+      return;
+    }
+
+    if (!validarSenha(senhaLimpa)) {
+      Alert.alert("Erro", "A senha deve ter no mínimo 4 caracteres.");
+      return;
+    }
+
     try {
-      const response = await api.get('/validar_morador', {
-        params: { email, senha },
+      const response = await api.post('/validar_morador', {
+        email: emailLimpo,
+        senha: senhaLimpa
       });
 
-      console.log('Resposta login:', response.data);
+      if (__DEV__) console.log('Resposta login:', response.data);
 
       const { id_morador, nome, tipo_usuario } = response.data;
 
@@ -34,8 +54,8 @@ export default function CadastroScreen() {
         return;
       }
 
-      await AsyncStorage.setItem('id_morador', id_morador.toString());
-      await AsyncStorage.setItem('tipo_usuario', tipo_usuario);
+      await salvarIdMorador(id_morador);
+      await salvarTipoUsuario(tipo_usuario);
 
       Alert.alert('Bem-vindo', `Olá ${nome}!`);
 
@@ -55,7 +75,7 @@ export default function CadastroScreen() {
       } else {
         Alert.alert('Erro', 'Não foi possível conectar ao servidor!');
       }
-      console.error('Erro login:', error);
+      if (__DEV__) console.error('Erro login:', error);
     }
   };
 
@@ -88,10 +108,7 @@ export default function CadastroScreen() {
         <Text style={styles.link}>Não tem uma conta? Faça o cadastro</Text>
       </TouchableOpacity>
 
-      <Image
-        source={require('../assets/logo.png')}
-        style={styles.imagem}
-      />
+      <Image source={require('../assets/logo.png')} style={styles.imagem} />
     </View>
   );
 }

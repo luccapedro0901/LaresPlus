@@ -3,15 +3,15 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   StyleSheet,
   Alert,
   TouchableOpacity,
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../axios/api';
+import { salvarIdMorador } from '../utils/secureStorage';
+import { validarEmail, validarSenha, sanitizarTexto } from "../utils/validacao";
 
 export default function CadastrarUserScreen() {
   const router = useRouter();
@@ -21,14 +21,34 @@ export default function CadastrarUserScreen() {
   const [senha, setSenha] = useState('');
 
   const cadastroMorador = async () => {
+    const emailLimpo = sanitizarTexto(email);
+    const nomeLimpo = sanitizarTexto(nome);
+    const senhaLimpa = sanitizarTexto(senha);
+
+    // validações
+    if (!emailLimpo || !nomeLimpo || !senhaLimpa) {
+      Alert.alert("Erro", "Preencha todos os campos.");
+      return;
+    }
+
+    if (!validarEmail(emailLimpo)) {
+      Alert.alert("Erro", "Informe um e-mail válido.");
+      return;
+    }
+
+    if (!validarSenha(senhaLimpa)) {
+      Alert.alert("Erro", "A senha deve ter no mínimo 4 caracteres.");
+      return;
+    }
+
     try {
       const response = await api.post('/cadastro_morador', {
-        nome,
-        email,
-        senha,
+        nome: nomeLimpo,
+        email: emailLimpo,
+        senha: senhaLimpa,
       });
 
-      console.log('Resposta do cadastro:', response.data);
+      if (__DEV__) console.log('Resposta do cadastro:', response.data);
 
       const { id_morador, mensagem } = response.data;
 
@@ -37,11 +57,11 @@ export default function CadastrarUserScreen() {
         return;
       }
 
-      await AsyncStorage.setItem('id_morador', id_morador.toString());
+      await salvarIdMorador(id_morador);
 
       Alert.alert('Sucesso', mensagem);
-
       router.push('/InicioScreen');
+
     } catch (error: any) {
       if (error.response) {
         if (error.response.status === 409) {
@@ -52,7 +72,7 @@ export default function CadastrarUserScreen() {
       } else {
         Alert.alert('Erro', 'Não foi possível conectar ao servidor!');
       }
-      console.error(error);
+      if (__DEV__) console.error(error);
     }
   };
 
@@ -83,11 +103,10 @@ export default function CadastrarUserScreen() {
         value={senha}
         onChangeText={setSenha}
       />
-      
-      <TouchableOpacity style={styles.botao} onPress={cadastroMorador}>
-      <Text style={styles.botaoTexto}>CADASTRAR</Text>
-      </TouchableOpacity>
 
+      <TouchableOpacity style={styles.botao} onPress={cadastroMorador}>
+        <Text style={styles.botaoTexto}>CADASTRAR</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.push('/CadastroScreen')}>
         <Text style={styles.link}>Já possui uma conta? Faça login</Text>
